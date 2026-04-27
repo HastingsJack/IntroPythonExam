@@ -205,12 +205,12 @@ with tab_kev:
     # =====================
     # Draw Graph
     # =====================
-    plt.figure(figsize=(max(30, len(G.nodes) * 0.5), 12))
+    fig4 = plt.figure(figsize=(max(30, len(G.nodes) * 0.5), 12))
+
     nx.draw_networkx_nodes(G, pos, node_color=color_map, node_size=1200)
     nx.draw_networkx_labels(G, pos, font_size=10)
     nx.draw_networkx_edges(G, pos, edge_color=edge_colors)
 
-    # Edge labels = products
     edge_labels = nx.get_edge_attributes(G, "label")
     nx.draw_networkx_edge_labels(
         G, pos, edge_labels=edge_labels, font_color="black", font_size=9
@@ -220,7 +220,8 @@ with tab_kev:
         "CWE → Vendor Network (Product as Edge Label, Red = Ransomware)", fontsize=14
     )
     plt.axis("off")
-    st.pyplot(plt)
+
+    st.pyplot(fig4)
 
     # =====================
     # CWE Bar Chart

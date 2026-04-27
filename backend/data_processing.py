@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 from backend.api.cve_api import get_cves_cached, get_cve
 from backend.api.kev_api import get_kevs_cached
 import json
+from typing import cast
 
 
 def get_cve_dataframe(days: int) -> pd.DataFrame:
@@ -14,7 +15,7 @@ def get_cve_dataframe(days: int) -> pd.DataFrame:
     cutoff = today - timedelta(days=days - 1)
 
     data = []
-    #print(json.dumps(kevs, indent=2))
+    # print(json.dumps(kevs, indent=2))
     for cve in cves:
         metrics = cve["cve"].get("metrics", {})
         cvss_list = metrics.get("cvssMetricV31", [])
@@ -50,13 +51,13 @@ def kev_ratio(df: pd.DataFrame) -> float:
 
 
 def critical_cves(df: pd.DataFrame) -> int:
-    return df["severity"].value_counts().get("CRITICAL", 0)
+    value = df["severity"].value_counts().get("CRITICAL")
+    return int(value) if value is not None else 0
 
 
 def average_cvss(df: pd.DataFrame) -> float:
-    if df.empty:
-        return 0
-    return df["score"].mean()
+    scores = cast(pd.Series, df["score"])
+    return float(scores.mean())
 
 
 def severity_counts(df: pd.DataFrame) -> dict:
@@ -71,7 +72,8 @@ def cves_by_weekday(df: pd.DataFrame) -> dict:
         .sort_index()
     )
     return {
-        date.strftime("%a %m-%d"): row.to_dict() for date, row in grouped.iterrows()
+        cast(datetime, date).strftime("%a %m-%d"): row.to_dict()
+        for date, row in grouped.iterrows()
     }
 
 
@@ -110,7 +112,7 @@ def total_kevs(df: pd.DataFrame) -> int:
 def top_vendor(df: pd.DataFrame) -> str:
     if df.empty:
         return "-"
-    return df["vendorProject"].value_counts().idxmax()
+    return str(df["vendorProject"].value_counts().idxmax())
 
 
 def most_common_cwe(df: pd.DataFrame) -> str:
@@ -120,7 +122,7 @@ def most_common_cwe(df: pd.DataFrame) -> str:
     cwe_count = kev_cwe_flat["cwe"].value_counts()
     if cwe_count.empty:
         return "-"
-    return cwe_count.idxmax()
+    return str(cwe_count.idxmax())
 
 
 def cwe_counts(df: pd.DataFrame) -> dict:
@@ -139,9 +141,12 @@ def ransomware_campaigns(df: pd.DataFrame) -> int:
 
 
 def get_watchlist_dataframe(cve: str) -> pd.DataFrame:
-    cve = get_cve(cve)
+    cve_record = get_cve(cve)
 
-    cve_data = cve["cve"]
+    if cve_record is None:
+        return pd.DataFrame()
+
+    cve_data = cve_record["cve"]
     print(json.dumps(cve_data, indent=2))
     cwes = []
     for w in cve_data.get("weaknesses", []):
