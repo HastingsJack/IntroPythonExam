@@ -19,7 +19,7 @@ COLORS = {
     "metric_bg": "#2c2c3e",
 }
 st.markdown(
-    f"<h1 style='text-align:center; color:{COLORS['text']}; font-size:28px;'>SecurePulse Inc.</h1>",
+    f"<h1 style='text-align:center; color:{COLORS['text']}; font-size:28px;'>E Corp Threat Hub</h1>",
     unsafe_allow_html=True,
 )
 st.markdown("---")
