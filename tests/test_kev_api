@@ -1,0 +1,109 @@
+import pandas as pd
+from backend.api import kev_api
+
+
+# -------------------------
+# FAKE DATA
+# -------------------------
+
+fake_api_response = {
+    "vulnerabilities": [
+        {"dateAdded": "2099-01-01", "cveID": "CVE-1"},
+        {"dateAdded": "2099-01-02", "cveID": "CVE-2"},
+    ]
+}
+
+
+old_fake_api_response = {
+    "vulnerabilities": [
+        {"dateAdded": "2000-01-01", "cveID": "CVE-OLD"}
+    ]
+}
+
+
+# -------------------------
+# FAKE REQUEST
+# -------------------------
+
+def fake_requests_get(*args, **kwargs):
+    class FakeResponse:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return fake_api_response
+
+    return FakeResponse()
+
+
+def fake_requests_get_old(*args, **kwargs):
+    class FakeResponse:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return old_fake_api_response
+
+    return FakeResponse()
+
+
+# -------------------------
+# TESTS
+# -------------------------
+
+def test_get_kevs_cached_returns_data(monkeypatch):
+    kev_api._kev_cache = None
+    kev_api._kev_cache_time = 0
+
+    monkeypatch.setattr(kev_api.requests, "get", fake_requests_get)
+
+    result = kev_api.get_kevs_cached()
+
+    assert isinstance(result, list)
+    assert len(result) == 2
+    assert result[0]["cveID"] == "CVE-1"
+
+
+def test_cache_is_used(monkeypatch):
+    calls = {"count": 0}
+
+    def fake_get(*args, **kwargs):
+        calls["count"] += 1
+
+        class FakeResponse:
+            def raise_for_status(self):
+                pass
+
+            def json(self):
+                return fake_api_response
+
+        return FakeResponse()
+
+    kev_api._kev_cache = None
+    kev_api._kev_cache_time = 0
+
+    monkeypatch.setattr(kev_api.requests, "get", fake_get)
+
+    first = kev_api.get_kevs_cached()
+    second = kev_api.get_kevs_cached()
+
+    assert first == second
+    assert calls["count"] == 1  # only fetched once due to cache
+
+
+def test_filter_recent_kevs_filters_old_data():
+    result = kev_api.filter_recent_kevs(
+        old_fake_api_response["vulnerabilities"],
+        days=30
+    )
+
+    assert result == []
+
+
+def test_filter_recent_kevs_keeps_recent_data():
+    result = kev_api.filter_recent_kevs(
+        fake_api_response["vulnerabilities"],
+        days=30
+    )
+
+    assert len(result) == 2
