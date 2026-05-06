@@ -1,3 +1,4 @@
+import os
 import streamlit as st
 import requests
 from datetime import datetime
@@ -37,7 +38,7 @@ st.markdown(
 # =====================
 # Fetch metrics from FastAPI
 # =====================
-BASE_URL = "http://127.0.0.1:8000"
+BASE_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
 response = requests.get(f"{BASE_URL}/cves/summary", params={"days": days})
 
 if response.status_code != 200:
@@ -129,6 +130,30 @@ with tab_cve:
     ax.spines["left"].set_color(COLORS["text"])
     ax.spines["right"].set_color(COLORS["text"])
     st.pyplot(fig2)
+
+    # =====================
+    # CVSS Score Histogram
+    # =====================
+    scores = cve_data["scores"]
+
+    if scores:
+        fig3, ax = plt.subplots(figsize=(8, 4), facecolor=COLORS["background"])
+        ax.hist(
+            scores,
+            bins=10,
+            range=(0, 10),
+            color=COLORS["critical"],
+            edgecolor=COLORS["background"],
+        )
+        ax.set_title("CVSS Score Distribution", color=COLORS["text"], fontsize=14)
+        ax.set_xlabel("CVSS Score", color=COLORS["text"])
+        ax.set_ylabel("Number of CVEs", color=COLORS["text"])
+        ax.tick_params(colors=COLORS["text"])
+        ax.spines["bottom"].set_color(COLORS["text"])
+        ax.spines["top"].set_color(COLORS["text"])
+        ax.spines["left"].set_color(COLORS["text"])
+        ax.spines["right"].set_color(COLORS["text"])
+        st.pyplot(fig3)
 
 response = requests.get(f"{BASE_URL}/kevs/summary", params={"days": days})
 
@@ -242,6 +267,59 @@ with tab_kev:
         ax.set_xticks(range(0, 11))
 
         st.pyplot(fig3)
+
+    # =====================
+    # Ransomware Bubble Chart
+    # =====================
+    ransomware_edges = [
+        e for e in graph_data["edges"] if e.get("ransomware") == "Known"
+    ]
+
+    if ransomware_edges:
+        pair_counts = {}
+        for e in ransomware_edges:
+            key = (e["source"], e["target"])
+            pair_counts[key] = pair_counts.get(key, 0) + 1
+
+        cwes = sorted(set(k[0] for k in pair_counts))
+        vendors = sorted(set(k[1] for k in pair_counts))
+
+        cwe_idx = {cwe: i for i, cwe in enumerate(cwes)}
+        vendor_idx = {vendor: i for i, vendor in enumerate(vendors)}
+
+        x = [cwe_idx[k[0]] for k in pair_counts]
+        y = [vendor_idx[k[1]] for k in pair_counts]
+        sizes = [count * 300 for count in pair_counts.values()]
+        counts = list(pair_counts.values())
+
+        fig5, ax = plt.subplots(
+            figsize=(max(8, len(cwes) * 1.5), max(6, len(vendors) * 0.6))
+        )
+
+        ax.scatter(x, y, s=sizes, color="red", alpha=0.6, edgecolors="darkred")
+
+        for xi, yi, count in zip(x, y, counts):
+            ax.text(
+                xi,
+                yi,
+                str(count),
+                ha="center",
+                va="center",
+                fontsize=9,
+                color="white",
+                fontweight="bold",
+            )
+
+        ax.set_xticks(range(len(cwes)))
+        ax.set_xticklabels(cwes, rotation=45, ha="right")
+        ax.set_yticks(range(len(vendors)))
+        ax.set_yticklabels(vendors)
+        ax.set_xlabel("CWE")
+        ax.set_ylabel("Vendor")
+        ax.set_title("Ransomware: Products Affected by CWE and Vendor")
+        ax.grid(True, ls="--", lw=0.5, alpha=0.5)
+
+        st.pyplot(fig5)
 
 # =====================
 # Last updated

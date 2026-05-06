@@ -23,6 +23,7 @@ def cves_summary(days: int = Query(7, ge=1, le=30)):
             day: {k: int(v) for k, v in counts.items()}
             for day, counts in data_processing.cves_by_weekday(df).items()
         },
+        "scores": df["score"].tolist() if not df.empty else [],
     }
 
 

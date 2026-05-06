@@ -1,8 +1,10 @@
+import os
 import streamlit as st
 import matplotlib.pyplot as plt
 import requests
 
-API_URL = "http://localhost:8000/password/cracking"
+BASE_URL = os.getenv("API_URL", "http://localhost:8000")
+API_URL = f"{BASE_URL}/password/cracking"
 SECONDS_IN_YEAR = 60 * 60 * 24 * 365
 
 st.title("Password Crack Time Estimator")
@@ -26,12 +28,14 @@ if st.button("Add/Check password"):
     lengths = []
     crack_times_seconds = []
     hibp_flags = []
+    entropies = []
 
     for r in data["data"]:
         passwords.append(r["password"])
         lengths.append(r["length"])
         crack_times_seconds.append(r["crack_time_seconds"])
         hibp_flags.append(r["hibp"])
+        entropies.append(r["entropy"])
 
     # Convert seconds to years
     crack_times_years = [s / SECONDS_IN_YEAR for s in crack_times_seconds]
@@ -61,10 +65,21 @@ if st.button("Add/Check password"):
     ax.set_title("Password Length vs Time to Crack")
     ax.grid(True, which="both", ls="--", lw=0.5)
 
-    # Optional legend
     if any(hibp_flags):
         ax.scatter([], [], color="red", label="Password found in HIBP")
         ax.scatter([], [], color="blue", label="Password not found in HIBP")
         ax.legend()
 
     st.pyplot(fig)
+
+    # Entropy bar chart
+    fig2, ax2 = plt.subplots(figsize=(10, max(3, len(passwords) * 0.5)))
+
+    colors = ["red" if hibp else "blue" for hibp in hibp_flags]
+    ax2.barh(passwords, entropies, color=colors)
+
+    ax2.set_xlabel("Entropy (bits)")
+    ax2.set_title("Password Entropy")
+    ax2.grid(axis="x", ls="--", lw=0.5)
+
+    st.pyplot(fig2)

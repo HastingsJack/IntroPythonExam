@@ -1,6 +1,9 @@
+import os
 import streamlit as st
 import pandas as pd
 import requests
+
+BASE_URL = os.getenv("API_URL", "http://127.0.0.1:8000")
 
 st.title("Your Watch List")
 
@@ -11,7 +14,6 @@ if "df" not in st.session_state:
 def add():
     cve_input = st.session_state.cve_input
 
-    BASE_URL = "http://127.0.0.1:8000"
     response = requests.get(f"{BASE_URL}/watchlist", params={"cve": cve_input})
 
     if response.status_code != 200:
