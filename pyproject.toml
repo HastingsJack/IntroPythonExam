@@ -22,3 +22,10 @@ dev = [
     "pytest>=9.0.3",
     "ruff>=0.15.11",
 ]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["backend*"]

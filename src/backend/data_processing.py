@@ -1,7 +1,7 @@
 import pandas as pd
 from datetime import datetime, timedelta
-from backend.api.cve_api import get_cves_cached, get_cve
-from backend.api.kev_api import get_kevs_cached
+from src.backend.api.cve_api import get_cves_cached, get_cve
+from src.backend.api.kev_api import get_kevs_cached
 import json
 from typing import cast
 

@@ -25,16 +25,24 @@ def get_all_cves(pub_start: str, pub_end: str) -> list:
             "startIndex": start_index,
             "resultsPerPage": page_size,
         }
+
         response = requests.get(BASE_URL, headers=HEADERS, params=params)
         response.raise_for_status()
         data = response.json()
+
         vulnerabilities = data.get("vulnerabilities", [])
+        total_results = data.get("totalResults", 0)
+
         if not vulnerabilities:
             break
+
         all_cves.extend(vulnerabilities)
-        start_index += page_size
-        if start_index >= data.get("totalResults", 0):
+
+        start_index += len(vulnerabilities)
+
+        if start_index >= total_results:
             break
+
     return all_cves
 
 

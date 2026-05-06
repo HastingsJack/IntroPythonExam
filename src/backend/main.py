@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Query
-from backend import data_processing, password_processing
+from src.backend import data_processing
+from src.backend import password_processing
 
 app = FastAPI(title="CVE Dashboard API")
 
