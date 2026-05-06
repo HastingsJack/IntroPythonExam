@@ -1,4 +1,4 @@
-import math
+import numpy as np
 import pandas as pd
 import hashlib
 import requests
@@ -6,52 +6,24 @@ import requests
 SECONDS_IN_YEAR = 60 * 60 * 24 * 365
 
 
-def calculate_entropy(password: str) -> float:
-    charset = 0
+def calculate_entropy(passwords):
+    passwords = np.array(passwords)
 
-    if any(c.islower() for c in password):
-        charset += 26
-    if any(c.isupper() for c in password):
-        charset += 26
-    if any(c.isdigit() for c in password):
-        charset += 10
-    if any(not c.isalnum() for c in password):
-        charset += 32
+    lengths = np.char.str_len(passwords)
 
-    if charset == 0:
-        return 0
+    has_lower = np.array([any(c.islower() for c in pw) for pw in passwords])
+    has_upper = np.array([any(c.isupper() for c in pw) for pw in passwords])
+    has_digit = np.array([any(c.isdigit() for c in pw) for pw in passwords])
+    has_symbol = np.array([any(not c.isalnum() for c in pw) for pw in passwords])
 
-    return len(password) * math.log2(charset)
+    charset = has_lower * 26 + has_upper * 26 + has_digit * 10 + has_symbol * 32
+
+    entropy = np.where(charset > 0, lengths * np.log2(charset), 0)
+    return entropy
 
 
-def estimate_crack_time(entropy: float, guesses_per_second=1e9) -> float:
-    combinations = 2**entropy
-    return combinations / guesses_per_second
-
-
-def password_dataframe(passwords: list[str]) -> pd.DataFrame:
-    data = []
-
-    for pw in passwords:
-        entropy = calculate_entropy(pw)
-        crack_time_seconds = estimate_crack_time(entropy)
-
-        hibp_check = False
-
-        if check_hibp(pw):
-            hibp_check = True
-
-        data.append(
-            {
-                "password": pw,
-                "length": len(pw),
-                "entropy": entropy,
-                "crack_time_seconds": crack_time_seconds,
-                "hibp": hibp_check,
-            }
-        )
-
-    return pd.DataFrame(data)
+def estimate_crack_time_vectorized(entropy, guesses_per_second=1e9):
+    return np.power(2, entropy) / guesses_per_second
 
 
 def check_hibp(pw: str) -> bool:
@@ -64,5 +36,25 @@ def check_hibp(pw: str) -> bool:
     response = requests.get(f"https://api.pwnedpasswords.com/range/{prefix}")
 
     hashes = (line.split(":")[0] for line in response.text.splitlines())
-
     return suffix in hashes
+
+
+def password_dataframe(passwords):
+    passwords = np.array(passwords)
+
+    entropy = calculate_entropy(passwords)
+    crack_time = estimate_crack_time_vectorized(entropy)
+
+    hibp = [check_hibp(pw) for pw in passwords]
+
+    df = pd.DataFrame(
+        {
+            "password": passwords,
+            "length": np.char.str_len(passwords),
+            "entropy": entropy,
+            "crack_time_seconds": crack_time,
+            "hibp": hibp,
+        }
+    )
+
+    return df
