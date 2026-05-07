@@ -154,13 +154,15 @@ def get_watchlist_dataframe(cve: str) -> pd.DataFrame:
             if d:
                 cwes.append(d.get("value", "N/A"))
 
+    metrics = cve_data.get("metrics", {})
+    cvss_list = metrics.get("cvssMetricV40") or metrics.get("cvssMetricV31") or []
+    cvss_data = cvss_list[0]["cvssData"] if cvss_list else {}
+
     data = [
         {
             "id": cve_data["id"],
-            "severity": cve_data["metrics"]["cvssMetricV40"][0]["cvssData"][
-                "baseSeverity"
-            ],
-            "score": cve_data["metrics"]["cvssMetricV40"][0]["cvssData"]["baseScore"],
+            "severity": cvss_data.get("baseSeverity", "N/A"),
+            "score": cvss_data.get("baseScore", "N/A"),
             "cwes": cwes,
         }
     ]
