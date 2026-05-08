@@ -21,7 +21,7 @@ chat page ("Ask Elliot").
 
 ```
 ┌──────────────┐      HTTP       ┌──────────────┐      HTTP      ┌─────────────┐
-│   Streamlit  │ ──────────────▶ │   FastAPI    │ ─────────────▶ │  NVD / KEV  │
+│   Streamlit  │ ─────────────▶ │   FastAPI    │ ─────────────▶ │  NVD / KEV  │
 │   frontend   │  /cves/summary  │   backend    │                │  HIBP / ... │
 │  (port 8501) │  /kevs/summary  │  (port 8000) │                └─────────────┘
 └──────────────┘  /password/...  └──────────────┘
