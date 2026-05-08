@@ -1,11 +1,27 @@
+import base64
 import os
 import streamlit as st
+import streamlit.components.v1 as components
 import matplotlib.pyplot as plt
 import requests
 
 BASE_URL = os.getenv("API_URL", "http://localhost:8000")
 API_URL = f"{BASE_URL}/password/cracking"
 SECONDS_IN_YEAR = 60 * 60 * 24 * 365
+
+ASSETS_DIR = os.path.join(os.path.dirname(__file__), "..", "assets")
+UH_OH_SOUND = os.path.join(ASSETS_DIR, "freesound_community-uh-oh-101117.mp3")
+WOO_HOO_SOUND = os.path.join(ASSETS_DIR, "freesound_community-woo-hoo-82843.mp3")
+
+
+def play_sound(path: str) -> None:
+    with open(path, "rb") as f:
+        b64 = base64.b64encode(f.read()).decode()
+    components.html(
+        f'<audio autoplay><source src="data:audio/mp3;base64,{b64}"></audio>',
+        height=0,
+    )
+
 
 st.title("Password Crack Time Estimator")
 
@@ -21,8 +37,10 @@ if st.button("Add/Check password"):
 
     if data["data"][-1]["hibp"]:
         st.error("This password was found in the Have I Been Pwned records!")
+        play_sound(UH_OH_SOUND)
     else:
         st.success("This password was not found in the Have I Been Pwned records.")
+        play_sound(WOO_HOO_SOUND)
 
     passwords = []
     lengths = []
